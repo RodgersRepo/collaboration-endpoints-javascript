@@ -6,7 +6,7 @@ __pab.js__ - A Javascript macro to allow Cisco CE Endpoints (V9.15.3.22) to acce
 - Navigate to __UI Extentions Editor__.
 - Click the menu icon (top right, three vertical lines).
 - Click __Import from file__.
-- Select the file __PABroomcontrolcomfig.xml__.<br><br>This will place a button labeled PAB on your telepresence enpoint. Now upload the javascript macro.
+- Select the file __PABroomcontrolcomfig.xml__.<br><br>This will place a button labeled PAB on your telepresence endpoint. Now upload the javascript macro.
 - Browse to your endpoint.
 - Navigate to __Macro Editor__.
 - Click __Import from file__.
