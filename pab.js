@@ -134,7 +134,7 @@ function displayDir(dirToDisplayArray) {
   xapi.Command.UserInterface.Extensions.Panel.Open({ PanelId: 'pabPanel_1'});
 }
 
-// Function that handles text entry and pop up warning responses from the user CONTINUE FROM HERE
+// Function that handles text entry and pop up warning responses from the user
 
 function feedbackResponse(event) {
   var urlToSendTo ="";
