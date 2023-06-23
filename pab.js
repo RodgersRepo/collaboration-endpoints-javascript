@@ -488,8 +488,8 @@ getAttributes();
 xapi.Status.SIP.Registration[1].URI.on(getAttributes);
         
 // Saves the pab button to the screen
-// not needed is using the securece macro as this
-// will place the button on the screen
+// not needed if you manually upload
+// PABroomcontrolconfig.xml
 //panelXML(); 
 
 // Normally when a button is pressed the coresponding panel opens
