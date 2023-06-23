@@ -11,7 +11,7 @@ __pab.js__ - A Javascript macro to allow Cisco CE Endpoints (V9.15.3.22) to acce
 - Navigate to __Macro Editor__.
 - Click __Import from file__.
 - Once uploaded toggle the macro on/off to __on__.
-- Read the comments at the start of __pab.js__ and throughout the macro. Change to suit your enviroment.<br><br>
+- Read the comments at the start of __pab.js__ and throughout the macro. Change to suit your enviroment. - <br><br>
 To use. Press the PAB button on the endpoint. Provide your log in PIN. The screen clears, press the PAB button again. Your CUCM personal address book entries should display.
 ## Links
 #### [Cisco RoomOS Macro Examples](https://roomos.cisco.com/macros)
