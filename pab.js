@@ -7,10 +7,11 @@
 /*                                                                  */                                                         
 /* DESCRIPTION                                                      */
 /*                                                                  */
-/* The user must have an ID that is a DN, and a vali PIN.           */
+/* The user must have an ID that is a DN, and a valid PIN.          */
 /* works best if you log in with your extension mobility (EM)       */
 /* credentials then press the PAB button on the Telepresence        */
-/* endpoint. Use the same PIN to loginto PAB as your EM login PIN.  */
+/* endpoint. Use the same PIN to log into PAB as your EM login PIN. */
+/*                                                                  */
 /* NOTES                                                            */
 /*                                                                  */
 /* Copyright (C) 2020  GNU GPL V4 RodgeIndustries2000               */
