@@ -1,2 +1,2 @@
 # javascript
-Javascript macros for Cico Telepresence Endpoints
+Javascript macros for Cisco Telepresence Endpoints
