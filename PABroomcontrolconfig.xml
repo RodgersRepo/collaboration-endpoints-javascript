@@ -1,0 +1,13 @@
+<Extensions>
+  <Version>1.7</Version>
+  <Panel>
+    <Order>3</Order>
+    <PanelId>pabPanel_1</PanelId>
+    <Origin>local</Origin>
+    <Type>Statusbar</Type>
+    <Icon>Language</Icon>
+    <Color>#00D6A2</Color>
+    <Name>PAB</Name>
+    <ActivityType>Custom</ActivityType>
+  </Panel>
+</Extensions>
