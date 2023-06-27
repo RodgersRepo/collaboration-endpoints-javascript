@@ -25,7 +25,7 @@
 /*---------------------[Declarations]---------------------------------------*/
 import xapi from "xapi";
 const pinCheckSixDigits  = /^[0-9]{6}$/;   // Regex to check PINs are 6 digits
-const extCheckFiveDigits = /^[0-9]{5}$/;// Regex to check user ext DN is 5 digits
+const extCheckFiveDigits = /^[0-9]{5}$/;   // Regex to check user ext DN is 5 digits
 //Change to match digit lengths in your enviroment
 
 var userExt   = ""; // Variable to hold the users extension
@@ -35,9 +35,6 @@ var cucmSrv   = ""; // Variable to hold the CUCM server this device registers to
 var userCurrentPin = ""; // Variable to hold users old PIN
 var userNewPin     = ""; // Variable to hold users new PIN
 var userConfirmPin = ""; // Variable to hold user PIN confirmation
-
-var lastPromptText = ""; // Variable to hold a txt message can be used to 
-                         // customise message prompt display
                          
 // Enable the HTTP client
 xapi.Config.HttpClient.Mode.set('On');
@@ -173,7 +170,7 @@ function changePinResponse(event){
         // Users confirmed PIN has 6 digits so post the PIN change to CUCM
         sendToCucm(cucmSrv, 'Get', '');// No payload data as this is a get request
         }
-      // Users confirmed PIN does not have 6 didgits, ask them again
+      // Users confirmed PIN does not have 6 digits, ask them again
       else {
         displayPinGui(
         'PIN',
@@ -274,8 +271,8 @@ function changePinNextLogin(event) {
 }
     
 /*---------------------[Main Execution]-------------------------------------*/
-// On first boot or reset get attributes such as device SEP
-// CUCM address and users DN
+// On first boot or reset get attributes such as device SEP and
+// CUCM address
 getAttributes();
 
 // Listen for events from the PIN set GUI, call changePinResponse function
@@ -287,9 +284,8 @@ xapi.Event.UserInterface.Extensions.Panel.Clicked.on(changePinNextLogin);
 
 // Listen for Extension mobility event that detects the user needs 
 // to change their PIN. Execute function to change PIN if triggered
-// WARNING. Endpoint ExtensionMobility events cannot cannot distinguish 
+// WARNING. Endpoint ExtensionMobility events cannot distinguish 
 // between a locked extension mobility PIN and a PIN that requires changing 
-// CUCM policy. 
 xapi.Event.ExtensionMobility.on(changePinNextLogin);
 
 // Listen for a user logging in, get there attributes
