@@ -67,7 +67,7 @@ async function getAttributes() {
       }
     }
     catch (err){
-      popUpWarning('This device is unregistered, contact the service desk');
+      popUpWarning('This device is unregistered, contact your system administrator');
     }
     console.log('sip proxy is ' + sipProxyNum + ' ip is ' + cucmSrv);
 }
