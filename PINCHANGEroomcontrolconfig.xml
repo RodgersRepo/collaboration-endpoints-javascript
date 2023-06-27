@@ -1,0 +1,13 @@
+<Extensions>
+  <Version>1.7</Version>
+  <Panel>
+    <Order>2</Order>
+    <PanelId>change_pin</PanelId>
+    <Origin>local</Origin>
+    <Type>Home</Type>
+    <Icon>Input</Icon>
+    <Color>#308C57</Color>
+    <Name>Set PIN</Name>
+    <ActivityType>Custom</ActivityType>
+  </Panel>
+</Extensions>
