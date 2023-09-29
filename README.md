@@ -1,4 +1,4 @@
-# javascript
+# Cisco CE endpoints javascript
 Javascript macros for Cisco Telepresence Endpoints registered to CUCM
 ## Macros
 __pab.js__ - A Javascript macro to allow Cisco CE Endpoints (V9.15.3.22) to access a users CUCM personal address book (PAB). Works best with CUCM extension mobility (EM), log into EM then press the PAB button on the Telepresence endpoint touch screen. To use.
