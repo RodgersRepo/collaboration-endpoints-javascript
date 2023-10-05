@@ -4,12 +4,19 @@ A collection of Javascript macros for Cisco Telepresence Endpoints registered to
 
 ### Macros
 **pab.js** - A Javascript macro to allow Cisco CE Endpoints (V9.15.3.22) to access a users CUCM personal address book (PAB). Works best with CUCM extension mobility (EM), log into EM then press the PAB button on the Telepresence endpoint touch screen.
+![Figure 1 - Personal Address Book Log In](/./PABLoginScreenShot.png "Personal Address Book Log In")
+![Figure 2 - Personal address book names detail](/./PABListSmall.png "Personal address book names detail")
 
 **pinchange.js** - A Javascript macro for Cisco CE Endpoints (V9.15.3.22). Allows a CUCM end user to change their extension mobilty pin. Designed around a CUCM implementation that uses directory numbers. This is a bit of a work in progress, be sure to change the code to match your enviroment. The comments should help with this. I have tried to make the macro respond to CUCM account "locked", and "account requires a pin change" but as you will see, the implementation is a little clumsy. This is due to the same error event, on the endpoint, being thrown for both "locked" and "pin change required".
+![Figure 3 - Pin change log In](/./PinChangeScreenShot.png "Pin change log in")
 
 ## Installation
 
 Click on the link for the javascript/xml above. When the code page appears click the **Download Raw file** button top right. Once downloaded to your computer have a read of the code in your prefered editor. Read the comments at the start of each code page and throughout the code. Change to suit your enviroment.
+
+## Usage
+
+Once uploaded to your endpoint, press the appropriate button on the touch user interface. The Javascript macro will execute.
 
 __pab.js__ - Download the javascript and XML code as above
 - Navigate to __UI Extentions Editor__.
