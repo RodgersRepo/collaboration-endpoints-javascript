@@ -14,6 +14,8 @@ A collection of Javascript macros for Cisco Telepresence Endpoints registered to
 
 ![Figure 3 - Pin change log In](/./PinChangeScreenShot.png "Pin change log in")
 
+-------------------------------------
+
 ## Installation
 
 Click on the link for the javascript/xml above. When the code page appears click the **Download Raw file** button top right. Once downloaded to your computer have a read of the code in your prefered editor. Read the comments at the start of each code page and throughout the code. Change to suit your enviroment.
