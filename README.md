@@ -16,10 +16,10 @@ Click on the link for the javascript/xml above. When the code page appears click
 
 ## Usage
 
-Once uploaded to your endpoint, press the appropriate button on the touch user interface. The Javascript macro will execute.
+Browse to your endpoint from the same computer you downloaded the XML and JavaScript onto. Then follow the instuctions below for each macro name.
 
 __pab.js__ - Download the javascript and XML code as above
-- Navigate to __UI Extentions Editor__.
+- Navigate to __UI Extentions Editor__. On the enpoint.
 - Click the menu icon (top right, three vertical lines).
 - Click __Import from file__.
 - Select the file __PABroomcontrolconfig.xml__.<br><br>This will place a button labeled PAB on your telepresence endpoint. Now upload the javascript macro.
