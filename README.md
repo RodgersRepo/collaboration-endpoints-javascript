@@ -1,5 +1,5 @@
 # Cisco CE endpoints javascript macros
-
+[![published](https://static.production.devnetcloud.com/codeexchange/assets/images/devnet-published.svg)](https://developer.cisco.com/codeexchange/github/repo/RodgersRepo/collaboration-endpoints-javascript)
 A collection of Javascript macros for Cisco Telepresence Endpoints registered to CUCM.
 
 ### Macros
