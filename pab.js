@@ -7,30 +7,37 @@
 /*                                                                  */                                                         
 /* DESCRIPTION                                                      */
 /*                                                                  */
-/* The user must have an ID that is a DN, and a valid PIN.          */
-/* works best if you log in with your extension mobility (EM)       */
-/* credentials then press the PAB button on the Telepresence        */
+/* The user must have an ID that is a directory number (DN), and a  */
+/* valid PIN. works best if you log in with your extension mobility */
+/* (EM) credentials then press the PAB button on the Telepresence   */
 /* endpoint. Use the same PIN to log into PAB as your EM login PIN. */
 /*                                                                  */
 /* NOTES                                                            */
 /*                                                                  */
-/* Copyright (C) 2020  GNU GPL V4 RodgeIndustries2000               */
+/* Copyright (C) 2020  GNU GPL V4 A Cripps                          */
 /*                                                                  */
 /* Release Date: 10/03/2020                                         */
-/* Last Updated: 14/04/2023                                         */
+/* Last Updated: 10/05/2024                                         */
 /* Change comments:                                                 */
 /*     V2 - require depreated, all new code to use import           */
 /*          all xapi commands changed to new syntax                 */
+/*     V2.1-Now asks for addr book user ID. A DN in this use case   */
+/*     V2.2-Copy address book to favs function added                */
 /*                                                                  */
 /********************************************************************/
 
 /*------------------[ Global Declarations ]-------------------------*/
 import xapi from "xapi";
+const extCheckFiveDigits = /^(5)[0-9]{4}$/;// Regex enforces a 5 digits user ID/Directory Number (DN) starting with 5. Change for your enviroment.
 var insertXML = "<Value><Key>empty0</Key><Name>Your Address Book is Empty</Name></Value>";
+var copyToFavs = "";         // variable to hold XML for the presence or not of the copy to favs button
+var deleteAllFavs = "";      // variable to hold XML for the presence or not of a delete favs button
+var closeOrBackWidgetId = "closeformwidget_1"; // Variable to hold widget id changes between back or close. Default is close
+var closeOrBack = "Close";   // Variable to hold name of form button, Close or Back. Default is close
 var pabUserExt   = "";       // Variable to hold the users extension
 var pabDeviceSep = "";       // Variable to hold the device SEP device name
 var pabCucmSrv   = "";       // Variable to hold the CUCM server this device registers to
-var formTitle = "Personal Address Book";
+var formTitle = "Personal Address Book"; 
 var credUrl  = "https://";
 var pabArray = [];          // Array to store  personel address list
 var addEntry = {Type:"", extNum:"",nickName:""}; //Object to hold add new entry details
@@ -38,8 +45,12 @@ var urlforEdit = "";        // Variable to hold the URL that performs an edit
 // Enable the HTTP client
 xapi.Config.HttpClient.Mode.set('On');
 
-//Do not verify certificates. Adjust for your enviroment!!
+//Do not check certificates with a CA server
 xapi.Config.HttpClient.AllowHTTP.set('True');
+
+//Stop user add/changeing contacts from the favorities tab
+//must use the macro UI
+xapi.Config.UserInterface.Phonebook.Mode.set('ReadOnly');
 
 /*-------------------[ Functions ]----------------------------------*/
 
@@ -67,20 +78,35 @@ async function getAttributes() {
       }
     }
     catch (err){
-      popUpWarning('This device is unregistered, contact the service desk', "pabUnregError");
+      console.log('This device is currently unregistered');
     }
     console.log('sip proxy is ' + sipProxyNum + ' ip is ' + pabCucmSrv);
     
-    // Get the users DN extension
-    try{
-      pabUserExt = await xapi.Status.SIP.Registration[1].URI.get();
-      pabUserExt = pabUserExt.substring(0, pabUserExt.indexOf('@'));
-      console.log('Users extension is ' + pabUserExt);
+}
+
+function deleteFavFolders(folders) {
+  // Count the number of folder IDs
+  // then delete them on EM logout
+  // When deleting FolderIds start at the 
+  // bottom and count down as subfolders
+  // get deleted when the parent gets deleted
+  // Start at the top and you then try to delete a subfolder
+  // that has already gone
+  try {
+    var count = folders.Folder.length; // Array 1st entry always 0
+    var i = count - 1;
+  
+    for (i;  i >= 0; i--) {
+      var folderId = folders.Folder[i].FolderId;
+      console.log(folderId + '  deleted');
+      xapi.Command.Phonebook.Folder.Delete({ FolderId: folderId });
     }
-    catch (err) {
-      console.log('Unable to determine extension mobility user ID');
-    }
-    
+    console.log(count + ' Address book folder deleted');
+  }
+  catch {
+    console.log('No address book folders to delete');
+  }
+
 }
 
 // Function that handles widget responses, such as a button press
@@ -90,6 +116,21 @@ function widgetResponse(event) {
     case 'closeformwidget_1':
       if(event.Type == 'pressed'){
         xapi.Command.UserInterface.Extensions.Panel.Close();
+      }
+    break;
+
+    case 'backformwidget_1':
+      if(event.Type == 'pressed'){
+        var urlToSendTo = credUrl + pabCucmSrv + ":443/ccmpd/pabSearch.do?func=search&name=" + pabDeviceSep;
+        sendHttpRequest(urlToSendTo);       
+      }
+    break;
+      
+    case "logoutPABwidget_1":
+      if(event.Type == 'pressed'){
+        var urlToSendTo = credUrl + pabCucmSrv + ":443/ccmpd/logout.do?name=" + pabDeviceSep;
+        sendHttpRequest(urlToSendTo); 
+        xapi.Command.UserInterface.Extensions.Panel.Close();      
       }
     break;
     
@@ -111,6 +152,18 @@ function widgetResponse(event) {
         sendHttpRequest(event.Value);
       }
     break;
+
+    case 'copyToFavsPABwidget_1':
+      if(event.Type == 'pressed'){        
+        copyToFavorities(insertXML);       
+      }
+    break;
+
+    case 'deleteAllFavsPABwidget_1':
+      if(event.Type == 'pressed'){        
+        xapi.Command.Phonebook.Search({ContactType: 'Folder'}).then (deleteFavFolders);       
+      }
+    break;
     
     default:
     console.log("a widget was pressed but no action assigned ");
@@ -118,19 +171,69 @@ function widgetResponse(event) {
   }
 }
 
+// Function to copy insertXML names then numbers to favorities
+// async functions create a promise to complete this action
+// asynchronously. The await makes the fuction pause for the result
+
+async function copyToFavorities(insertXmlVar) {
+    if (insertXmlVar.includes("empty0")) {
+      console.log("Cannot copy to favorites. Invalid or empty directory array");
+      return;
+    }
+    var myRegex = new RegExp("pkid", "g");
+    var count = (insertXmlVar.match(myRegex) || []).length;
+    var i = 0;
+    var localArray = []; // Array to store names/numbers
+
+    for (i = 0;  i < count; i++) {
+      var contactUrl = insertXmlVar.match("<Key>(.*?)</Key>")[1];
+      var contactName = insertXmlVar.match("<Name>(.*?)</Name>")[1];
+      await xapi.Command.Phonebook.Folder.Add({ Name: contactName }).then((event) => getExtForFavs(event, contactUrl))
+      localArray[i] = {
+        name: contactName,
+        url: contactUrl
+      };
+      // insertXmlVar is only a string. Need to remove the 
+      // line that has just been actioned so the loop can
+      // find the next line
+      insertXmlVar = insertXmlVar.replace("<Value><Key>" + contactUrl + "</Key><Name>" + contactName + "</Name></Value>", "");       
+    }    
+    return;
+}
+
+// Function that extracts the ext from URL and
+// copies to correct favorites folder
+
+function getExtForFavs(event, contactUrl) {  
+  // When you rendered the on screen display
+  // see line (case 'Select an index to dial':) any special characters
+  // such as & had to be escaped. That escape now needs to be globally removed
+  // otherwise the contactUrl is malformed!!
+  contactUrl = contactUrl.replace(/&amp;/g, "&")
+
+  // Uncomment to see the extension numbers URL and favs folder name
+  //console.log(JSON.stringify(event.Name) + " " + contactUrl);
+  sendHttpRequest(contactUrl, event.Name)
+
+} 
+
+
 // Function to build the XML for displaying the OSD panel
 
 function displayDir(dirToDisplayArray) {
-  var count = dirToDisplayArray.length;
-  var i;
-  insertXML = "";
-  for (i = 0;  i < count; i++) {
-    insertXML +=  "<Value><Key>" + dirToDisplayArray[i].url 
-              +   "</Key><Name>" + dirToDisplayArray[i].name
-              +   "</Name></Value>";
+  if (!Array.isArray(dirToDisplayArray) || dirToDisplayArray.length === 0) {
+    console.log("Invalid or empty directory array");
+    return;
   }
+  
+  insertXML = "";
+  for (var entry of dirToDisplayArray) {
+    // Backticks as we are interpolating variables within the txt
+    insertXML += `<Value><Key>${entry.url}</Key><Name>${entry.name}</Name></Value>`;
+  }
+
   //Save the pab panel with the dir entries then open
-  panelXML();  
+  panelXML(); 
   xapi.Command.UserInterface.Extensions.Panel.Open({ PanelId: 'pabPanel_1'});
 }
 
@@ -140,6 +243,27 @@ function feedbackResponse(event) {
   var urlToSendTo ="";
   var addOptions = {1:"homeNumber", 2:"workNumber", 3:"mobileNumber"};
   switch(event.FeedbackId){
+    case 'pabUserExtSubmit':
+        // Check that the user entered a 6 digit PIN, ask again if not
+        if (extCheckFiveDigits.test(event.Text)){
+          pabUserExt = event.Text;
+          popUpTxtInput(
+            "PIN",
+            "Please enter the six digit PIN for this address book",
+            "Log into the Address Book with user ID " + pabUserExt,
+            "Submit",
+            "pabUserPinSubmit");
+        }
+        // Users extension not 5 digits ask again
+        else {
+          popUpTxtInput(
+          'Numeric',
+          'MUST BE 5 DIGITS AND BEGIN WITH AN 5!!, please retype',
+          'Log into your Personal Address Book<br>or Multi User Account address book<br>The user ID is the same as the extension',
+          'Submit',
+          'pabUserExtSubmit');
+        }
+    break;
     case 'pabUserPinSubmit':
         urlToSendTo = credUrl 
                 + pabCucmSrv 
@@ -250,7 +374,7 @@ for (i = 0;  i < count; i++) {
         name: dirName,
         url: dirUrl
     };
-    xml = xml.replace("<MenuItem><Name>" + dirName + "</Name><URL>" + dirUrl + "</URL></MenuItem>" , "");
+    xml = xml.replace(`<MenuItem><Name>${dirName}</Name><URL>${dirUrl}</URL></MenuItem>` , "");
   }
 return localArray;
 }
@@ -260,14 +384,26 @@ return localArray;
 // double case statements to capture lower and upper case responses
 
 function responseToHttp(prompt, xml) {
+  //console.log("the prompt text is " + prompt);  // Uncomment this to see prompt text from CUCM
+  //console.log("XML from cucm is:- " + xml); // Uncomment to see xml from cucm
   var urlToSendTo = "";
   switch(prompt) {
       case 'Personal Directory Log in':
       case 'Personal Directory Login':
+        // When logging in again previous data entries can show. Blank these then close the panel.
+        insertXML = "<Value><Key>empty0</Key><Name></Name></Value>";
+        copyToFavs = "";
+        deleteAllFavs = "";
+        panelXML();
         xapi.Command.UserInterface.Extensions.Panel.Close();
         console.log("You need to log in");
         // pop up a login box
-        popUpTxtInput("PIN", "Please enter your six digit PIN", "Log into the Personal Address Book for extension " + pabUserExt, "Submit", "pabUserPinSubmit");
+        popUpTxtInput(
+          "Numeric",
+          "Please enter five digit user id for the address book",
+          "Log into your Personal Address Book<br>or Multi User Account address book<br>The user ID is the same as the extension",
+          "Submit",
+          "pabUserExtSubmit");
       break;
       
       case 'Search for an entry':
@@ -279,6 +415,10 @@ function responseToHttp(prompt, xml) {
       case 'Page 1 of 1':
         console.log("Display directory names");
         pabArray = extractNamesFromDir(xml, "pkid");
+        closeOrBack = "Close";
+        closeOrBackWidgetId = "closeformwidget_1";
+        copyToFavs = "<Widget><WidgetId>copyToFavsPABwidget_1</WidgetId><Name>Copy this address book to favorites folder</Name><Type>Button</Type><Options>size=4</Options></Widget>";
+        deleteAllFavs = "<Widget><WidgetId>deleteAllFavsPABwidget_1</WidgetId><Name>Delete all entries from the favorities folder</Name><Type>Button</Type><Options>size=4</Options></Widget>";
         displayDir(pabArray);
       break;
       
@@ -286,6 +426,9 @@ function responseToHttp(prompt, xml) {
       case 'No Entries':
         console.log("No directory names found, open an empty panel");
         insertXML = "<Value><Key>empty0</Key><Name>Your Address Book is Empty</Name></Value>";
+        closeOrBack = "Close";
+        copyToFavs = "";
+        deleteAllFavs = "";
         panelXML();
         xapi.Command.UserInterface.Extensions.Panel.Open({ PanelId: 'pabPanel_1'});
       break;
@@ -311,6 +454,10 @@ function responseToHttp(prompt, xml) {
         pabArray.push({name: '───────────────────', url: 'EMPTY'});
         pabArray.push({name: 'Delete This Contact', url: urlforDelete});
         pabArray.push({name: 'Edit This Contact', url: urlforPabEdit});
+        copyToFavs = "";
+        deleteAllFavs = "";
+        closeOrBack = "Back";
+        closeOrBackWidgetId ="backformwidget_1";
         displayDir(pabArray);
       break;
       
@@ -327,11 +474,14 @@ function responseToHttp(prompt, xml) {
       break;
       
       case 'OK to dial...':
-      case 'OK to Dial...':
-        console.log("Dialing chosen number");
+      case 'OK to Dial...':        
         var numToDial = xml.match("<URL>Dial:(.*?)</URL>")[1];
-        xapi.Command.Dial({Number: numToDial});
-        xapi.Command.UserInterface.Extensions.Panel.Close();
+        if (numToDial){
+          console.log('Dialing the number ' + numToDial);
+          xapi.Command.Dial({Number: numToDial});
+          xapi.Command.UserInterface.Extensions.Panel.Close();
+          console.log("Dialing chosen number");
+        }
       break;
       
       case 'Successful remove':
@@ -358,7 +508,7 @@ function responseToHttp(prompt, xml) {
                     + addEntry.Type
                     + "="
                     + addEntry.extNum;
-      console.log(urlToSend);
+      //console.log(urlToSend);
       sendHttpRequest(urlToSend);
       break;
       
@@ -372,13 +522,31 @@ function responseToHttp(prompt, xml) {
       break;
       
     default:
+      // You cant put contains method after a case statement. So
+      // have put it here with an If statement to capture all 
+      // creation of favorite folders
+
+      if (prompt.startsWith("localGroupId-")){
+        pabArray = extractNamesFromDir(xml, "fdNumber");
+        for (var entry of pabArray) {
+          var extensionToUse = entry.name.replace(/^\D+/g, "");
+          // If there is an extension number add it to the folder in the prompt
+          if (extensionToUse){
+            xapi.Command.Phonebook.Contact.Add({ 
+            FolderId: prompt, 
+            Name: entry.name, 
+            Number: extensionToUse
+            });
+          }
+        }
+      }
       console.log("No changes to make");
   }
 }
 
 // Function that sends an HTTPs Get request to CUCM
 
-function sendHttpRequest(url) {
+function sendHttpRequest(url, favsArg = null) {
   xapi.Command.HttpClient.Get({ 
     Header: ["Content-Type: text/xml"], 
     Url: url,
@@ -387,8 +555,9 @@ function sendHttpRequest(url) {
   })
   .then((result) => {
       var x = result.Body;
-      //console.log(x);  // Uncomment to see XML data recieved from CUCM
+      //console.log("URL used to conatc CUCM:- " + url + " Result from CUCM:- " + x);  // Uncomment to see XML data recieved from CUCM
       var promptTxt = x.match("<Prompt>(.*)</Prompt>")[1];
+      if (favsArg){promptTxt = favsArg}
       responseToHttp(promptTxt, x);
   })
   .catch((err) => {
@@ -400,6 +569,7 @@ function sendHttpRequest(url) {
 
 // Function that draws the GUI form panel to the screen 
 function panelXML() {
+  // Backticks when including variables inline
   xapi.Command.UserInterface.Extensions.Panel.Save(
   { PanelId: 'pabPanel_1' },
   `
@@ -416,7 +586,7 @@ function panelXML() {
     <Page>
       <Name>${formTitle}</Name>
       <Row>
-        <Name>Row</Name>
+        <Name>Row1</Name>
         <Widget>
           <WidgetId>addcontactwidget_2</WidgetId>
           <Name>Add Contact</Name>
@@ -424,10 +594,18 @@ function panelXML() {
           <Options>size=2</Options>
         </Widget>
         <Widget>
-          <WidgetId>closeformwidget_1</WidgetId>
-          <Name>Close</Name>
+          <WidgetId>${closeOrBackWidgetId}</WidgetId>
+          <Name>${closeOrBack}</Name>
           <Type>Button</Type>
           <Options>size=2</Options>
+        </Widget>
+        ${copyToFavs}
+        ${deleteAllFavs}
+        <Widget>
+          <WidgetId>logoutPABwidget_1</WidgetId>
+          <Name>Log out of this address book</Name>
+          <Type>Button</Type>
+          <Options>size=4</Options>
         </Widget>
       </Row>
       <Row>
@@ -485,11 +663,12 @@ getAttributes();
 
 // Call getAttributes if there is a change in EM login
 // for example someone has logged in or out
+// GET RID OF THI AS NOW ASKING FOR EXT??
 xapi.Status.SIP.Registration[1].URI.on(getAttributes);
         
 // Saves the pab button to the screen
-// not needed if you manually upload
-// PABroomcontrolconfig.xml
+// not needed is using the securece macro as this
+// will place the button on the screen
 //panelXML(); 
 
 // Normally when a button is pressed the coresponding panel opens
@@ -498,6 +677,9 @@ xapi.Status.SIP.Registration[1].URI.on(getAttributes);
 
 xapi.Event.UserInterface.Extensions.Panel.Clicked.on((event) => {
     if(event.PanelId == 'pabPanel_1'){
+        getAttributes();
+        var closeOrBackWidgetId = "closeformwidget_1"; 
+        var closeOrBack = "Close";
         var urlToSendTo = credUrl + pabCucmSrv + ":443/ccmpd/pabSearch.do?func=search&name=" + pabDeviceSep;
         sendHttpRequest(urlToSendTo);
     }
