@@ -259,7 +259,7 @@ function feedbackResponse(event) {
           popUpTxtInput(
           'Numeric',
           'MUST BE 5 DIGITS AND BEGIN WITH AN 5!!, please retype',
-          'Log into your Personal Address Book<br>or Multi User Account address book<br>The user ID is the same as the extension',
+          'Log into your Personal Address Book<br>The user ID is the same as the extension',
           'Submit',
           'pabUserExtSubmit');
         }
@@ -401,7 +401,7 @@ function responseToHttp(prompt, xml) {
         popUpTxtInput(
           "Numeric",
           "Please enter five digit user id for the address book",
-          "Log into your Personal Address Book<br>or Multi User Account address book<br>The user ID is the same as the extension",
+          "Log into your Personal Address Book<br>The user ID is the same as the extension",
           "Submit",
           "pabUserExtSubmit");
       break;
